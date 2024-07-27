@@ -1,0 +1,121 @@
+## Data and Programming Python Coursework 4: Data Scraping & Loops 
+
+"""
+HOMEWORK 4
+
+You and your roommate have decieded to delve into the history of US cinema,
+choosing a random blockbuster every Friday to watch. The problem, of course, is
+that (a) you don't have a list of US blockbusters and (b) your roommate is 
+indecisive and choosing a "random" movie to watch is going to be a nightmare!
+
+Wikipedia to the rescue! It has a set of pages detailing all American films 
+released in a particular year. For example:
+    
+    https://en.wikipedia.org/wiki/List_of_American_films_of_1982
+    
+You can look at different pages by changing the year at the end of the URL
+e.g. replacing 1982 with 1997
+
+At the top of these pages is a table containing the top 10 highest-grossing films 
+for that year. The structure of this page is pretty stable - every such page from
+1970 onwards has this table.
+
+YOUR TASK
+
+In this exercise, you will create a python program that will scrape 
+each such page from Wikipedia for the period 1970 to 2023. Using this 
+information it will create a dataset of all the top-grossing movies, then open
+the dataset and pick a movie at random.
+
+MANDATORY
+
+Do not use the wikipeia package or API
+
+Ensure that you insert a pause of 3 seconds between requests for 
+data to wikipedia. 
+
+By "create a dataset", we mean you must save the data to a CSV file named
+"movies.csv". Then, open the CSV file and pick a movie at random. Print 
+the name of the chosen movie with the year in brackets e.g. John Wick (2004)
+
+The CSV file must include the following columns: Year, Rank, Title, 
+Distributor, Domestic gross
+
+## Defining function to collect data from url 
+
+def top_grossing_films(year):
+    url = f"https://en.wikipedia.org/wiki/List_of_American_films_of_{year}"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, "html.parser")
+    ## before loading all tables we find that for the year 2021 the required table is table #2 instead of #1, so we fix this by:
+    if year == 2021:
+        table_no = 2
+    else:
+        table_no = 1
+    ## extracting tables 
+    table = soup.find_all("table")[table_no]
+    
+    rows = table.find_all("tr")
+    extracted_table = [] 
+    distributor_data = None
+    for row in rows:
+        cells = row.find_all(['td', 'th']) 
+        row_headers = []
+        for cell in cells:
+            cell_data = cell.text.strip() 
+            row_headers.append(cell_data)
+            
+            ## cleaning the content in cells due to merged cells and missing values 
+            if len(cells) == 3:
+                row_headers.extend([None] * (4 - len(row_headers)))    
+                row_headers[3] = row_headers[2]
+                row_headers[2] = distributor_data
+            if row_headers:
+                distributor_data = row_headers[2] if len(row_headers) >= 3 else None
+            
+        ## we find that there is a discrepency in the naming of the columns- in 1991 the column is
+        ## named "Worldwide gross" and between 2014-16 its named "Domestic Gross" 
+        if "Worldwide gross" in row_headers:
+            row_headers[row_headers.index("Worldwide gross")] = "Domestic gross"
+        if "Domestic Gross" in row_headers:
+            row_headers[row_headers.index("Domestic Gross")] = "Domestic gross"
+        
+        extracted_table.append(row_headers)
+        
+        final_headers = extracted_table[0]
+        final_data = extracted_table[1:]
+    
+    best_films = pd.DataFrame(final_data, columns= final_headers)
+    best_films["Year"] = year 
+    return best_films 
+
+
+## Creating loop that collects data from each year 
+final_films = pd.DataFrame()
+
+for year in range(1970,2024):
+    print(f"Scraped movies for {year}")
+    best_films = top_grossing_films(year)
+    final_films = pd.concat([final_films, best_films], ignore_index=True)
+    time.sleep(3)
+print(best_films.head())
+    
+## saving dataframe as csv 
+os.chdir("C:/Users/Riya/Desktop/Harris Year 1/Spring Quarter/Data & Programming I Python")
+best_films.to_csv('top grossing films.csv', index = False)
+
+
+## opening the file & selecting a random film 
+path = r"C:/Users/Riya/Desktop/Harris Year 1/Spring Quarter/Data & Programming I Python/top grossing films.csv"
+movie_night_list = pd.read_csv(path)
+
+selection = movie_night_list.sample()
+print(f"Tonight you should watch: {selection['Title'].values[0]} ({selection['Year'].values[0]})")
+
+
+
+
+
+    
+    
+        
