@@ -1,0 +1,107 @@
+## Data and Programming Python Coursework 3: Data visualizations & Regression 
+
+"""
+QUESTION 1
+
+In this question, you'll be replicating the graph from Lecture 14, slide 5
+which shows the population of Europe from 0 AD to the present day in both
+the linear and the log scale. You can find the data in population.csv, and the
+variable names are self-explanatory.
+
+Open this data and replicate the graph. 
+"""
+## loading files and setting working directory 
+
+path = r"C:/Users/Riya/Desktop/Harris Year 1/Spring Quarter/Data & Programming I Python/population.csv"
+
+popn = pd.read_csv(path)
+
+## subsetting & extracting data 
+
+popn_eu = popn[(popn['Year'] >= 0) & (popn['Entity'] == 'Europe')]
+
+years = popn_eu['Year']
+population = popn_eu['Population (historical estimates)']
+
+## creating graphs
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (11,6))
+
+ax1.plot(years, population, color = "blue")
+ax1.set_title('Population of Europe from 0 BCE in millions')
+ax2.plot(years, np.log(population), color = "blue")
+ax2.set_title('Population of Europe from 0 BCE in millions (log scale)')
+
+plt.show()
+
+
+"""
+QUESTION 2
+
+A country's "capital stock" is the value of its' physical capital, which includes the 
+stock of equipment, buildings, and other durable goods used in the production 
+of goods and services. Macroeconomists seem to conisder it important to have 
+public policies that encourage the growth of capital stock. Why is that?
+
+In this exercise we will look at the relationship between capital stock and 
+GDP. You can find data from the IMF in "capitalstock.csv" and documentation in
+"capitalstock documentation.txt".
+
+In this exercise we will only be using the variables that are demarcated in
+thousands of 2017 international dollars to adjust for variation in the value 
+of nominal national currency. Hint: These are the the variables that 
+end in _rppp.
+
+1. Open the dataset capitalstock.csv and limit the dataframe to only 
+observations from 2018
+
+2. Construct a variable called "capital_stock" that is the sum of the general
+government capital stock and private capital stock. Drop 
+observations where the value of capital stock is 0 or missing. (We will be 
+ignoring public-private partnership capital stock for the purpose of t
+his exercise.)
+
+3. Create a scatterplot showing the relationship between log GDP and log
+capital stock. Put capital stock on the y-axis. Add the line of best 
+fit. Add labels where appropriate and make any cosmetic adjustments you want.
+
+4. Estimate a model of the relationship between the log of GDP 
+and the log of capital stock using OLS. GDP is the dependent 
+variable. Print a table showing the details of your model and, using comments, 
+interpret the coefficient on capital stock. 
+"""
+## 1. Loading & sub-setting data 
+path2 = r"C:/Users/Riya/Desktop/Harris Year 1/Spring Quarter/Data & Programming I Python/capitalstock.csv"
+capital_stock = pd.read_csv(path2)
+capital_stock2018 = capital_stock[capital_stock['year'] == 2018]
+
+## 2. Cleaning data 
+capital_stock2018['capital_stock'] = capital_stock2018['kgov_rppp'] + capital_stock2018['kpriv_rppp']
+capital_stock2018 = capital_stock2018.replace(np.nan , 0)
+capital_stock2018 = capital_stock2018.loc[capital_stock2018.capital_stock != 0]
+
+## 3. Creating the scatter plot 
+gdp_rppp = np.log(capital_stock2018["GDP_rppp"])
+capital_stock_y = np.log(capital_stock2018["capital_stock"])
+
+fig, ax = plt.subplots()
+m , b = np.polyfit(gdp_rppp , capital_stock_y , 1)
+gen_line = np.poly1d((m , b))
+ax.scatter(gdp_rppp , capital_stock_y, color = "blue")
+ax.plot(gdp_rppp, gen_line(gdp_rppp), color = "black")
+ax.set_title("Relationship between log GDP and log Capital Stock (in thousands of 2017 intl $)")
+ax.set_xlabel("log(GDP)")
+ax.set_ylabel("log(capital stock)")
+
+## 4. Creating regression model 
+from statsmodels.regression.linear_model import OLS 
+
+capital_stock2018["intercept"] = np.ones(len(capital_stock2018))
+
+reg_model = OLS(endog = ["gdp_rppp"],
+                exog = [ "intercept", "capital_stock_y"]) 
+result = reg_model 
+print(result.summary())
+
+## The beta value 0.9758 indicates that a 1% increase in capital stock will result in a 0.9758% increase in GDP for a country, if all else remains constant. 
+                
