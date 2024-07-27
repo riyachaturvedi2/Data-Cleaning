@@ -1,0 +1,94 @@
+
+## Cleaning World Bank open data file downloads, and compiling various indicators into one file 
+
+## Maternal Mortality Ratios 
+path = r"C:/Users/Riya/Desktop/iNPER Mexico Internship/Master/MMR_estimates.csv"
+
+mmr_est = pd.read_csv(path)
+
+## Converting wide data to long in order to create a panel dataset 
+
+mmr_est_long = mmr_est.melt(
+    id_vars = "Country Name", 
+    var_name = "Year", 
+    value_name = "MMR")
+
+mmr_est_long.dtypes
+mmr_est_long["Year"] = pd.to_numeric(mmr_est_long["Year"]) 
+
+mmr_est_long = mmr_est_long[mmr_est_long["Year"] >= 2006]   ##in accordance with study requirements 
+
+mmr_est_long.to_csv("long_mmr_estimated.csv", index = False) 
+
+## GNI data
+
+path2 = r"C:/Users/Riya/Desktop/iNPER Mexico Internship/Master/GNI data.csv"
+
+gni = pd.read_csv(path2)
+
+gni_long = gni.melt(
+    id_vars = "Country Name", 
+    var_name = "Year", 
+    value_name = "GNI")
+
+gni_long.dtypes
+
+gni_long["Year"] = pd.to_numeric(gni_long["Year"]) 
+
+gni_long = gni_long[gni_long["Year"] >= 2006]
+
+gni_long.to_csv("long_gni.csv", index = False) 
+
+## Merging MMR & GNI files
+
+merge1 = mmr_est_long.merge(gni_long,
+                     on = ["cname", "year"],
+                     how = "left")    ##left merge to preserve all data points which have MMR values (main variable) 
+
+## GINI data 
+
+path3 = r"C:/Users/Riya/Desktop/iNPER Mexico Internship/Master/gini.csv"
+
+gini = pd.read_csv(path3)
+
+gini_long = gini.melt(
+    id_vars = "cname", 
+    var_name = "year", 
+    value_name = "GINI")
+
+gini_long["year"] = pd.to_numeric(gini_long["year"]) 
+
+gini_long = gini_long[gini_long["year"] >= 2006]
+
+gini_long.to_csv("long_gini.csv", index = False) 
+
+merge2 = merge1.merge(gini_long,
+                     on = ["cname", "year"],
+                     how = "left")
+
+merge2.to_csv("final_data4.csv", index = False)
+
+## govt health expenditure per capita 
+
+path4 = r"C:/Users/Riya/Desktop/iNPER Mexico Internship/Master/govt health exp ppp.csv"
+govt = pd.read_csv(path4)
+
+govt_long = govt.melt(
+    id_vars = "cname", 
+    var_name = "year", 
+    value_name = "Govt_Health_Exp")
+
+govt_long["year"] = pd.to_numeric(govt_long["year"]) 
+
+
+govt_long = govt_long[govt_long["year"] >= 2006]
+
+govt_long.to_csv("long_govt.csv", index = False) 
+
+
+merge3 = merge2.merge(govt_long,
+                     on = ["cname", "year"],
+                     how = "left")
+
+merge3.to_csv("final_data6.csv", index = False)
+
