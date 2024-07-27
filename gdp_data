@@ -1,0 +1,229 @@
+## Data and Programming in Python Coursework 2 
+
+"""
+
+To answer these questions, you will use the two csv files provided in the repo.
+The file named gdp.csv contains the per capita GDP of many countries in and 
+around Europe in 2023 US dollars. The file named population.csv contains 
+estimates of the population of many countries.
+"""
+
+"""
+QUESTION 1
+
+Short: Open the data
+
+Long: Load the GDP data into a dataframe. Specify an absolute path using the Python 
+os library to join filenames, so that anyone who clones your homework repo 
+only needs to update one string for all loading to work.
+"""
+
+path = r"C:\Users\Riya\Desktop\Harris Year 1\Spring Quarter\Data & Programming I Python\gdp.csv"
+gdp = pd.read_csv(path)
+
+"""
+QUESTION 2
+
+Short: Clean the data
+
+Long: There are numerous issues with the data, on account of it having been 
+haphazardly assembled from an online table. To start with, the column containing
+country names has been labeled TIME. Fix this.
+
+Next, trim this down to only member states of the European Union. To do this, 
+find a list of members states (hint: there are 27 as of Apr 2024) and manually 
+create your own CSV file with this list. Name this file countries.csv. Load it 
+into a dataframe. Merge the two dataframes and keep only those rows with a 
+match.
+
+(Hint: This process should also flag the two errors in naming in gdp.csv. One 
+ country has a dated name. Another is simply misspelt. Correct these.)
+"""
+## 1) renaming column 
+gdp = gdp.rename({"TIME" : "Country"}, axis = 1)
+
+## 2) creating a data subset of the 27 EU countries only 
+country_path = r"C:\Users\Riya\Desktop\Harris Year 1\Spring Quarter\Data & Programming I Python\Countries.csv"
+encoding = 'latin1' 
+countries = pd.read_csv(country_path, encoding = encoding)
+
+countries_df = pd.DataFrame(countries)
+countries_df = countries_df.rename({'Country ' : 'Country'}, axis = 1)
+countries_df = countries_df.replace({'Country' : {"The Netherlands" : "Netherlands"}})
+
+## 3) correcting errors 
+
+gdp = gdp.replace({'Country' : {"Itly" : "Italy", "Czechia" : "Czech Republic"}})
+
+
+## 4) merging the two datasets 
+gdp_df2 = gdp.merge(countries_df, 
+                      on = 'Country',
+                      how = 'inner')
+
+## 5) setting assert error 
+ideal_len = len(countries_df)
+merged_len = len(gdp_df2)
+assert(ideal_len == merged_len), "Merge error"
+
+## Number of rows matching in both datasets-- success! 
+
+"""
+QUESTION 3
+
+Short: Reshape the data
+
+Long: Convert this wide data into long data with columns named year and gdp.
+The year column should contain int datatype objects.
+
+Remember to convert GDP from string to float. (Hint: the data uses ":" instead
+of NaN to denote missing values. You will have to fix this first.) 
+"""
+## indicating missing values in gdp_df2 (converting from : to Nan)
+gdp_df2.replace(':', float('Nan'), inplace = True)
+print(gdp_df2 == ':')  ## checking 
+
+## converting from wide to long data type
+gdp_long = gdp_df2.melt(
+    id_vars = ['Country'],
+    var_name = 'Year',
+    value_name = 'GDP')
+gdp_long['Year'] = gdp_long['Year'].str.replace('GDP', ' ') ## correcting values in the year column 
+
+gdp_long['GDP'] = gdp_long['GDP'].astype(float)
+
+gdp_long['Year'] = gdp_long['Year'].astype(int)
+
+
+
+"""
+QUESTION 4
+
+Short: Repeat this process for the population data.
+
+Long: Load population.csv into a dataframe. Rename the TIME columns. 
+Merge it with the dataframe loaded from countries.csv. Make it long, naming
+the resulting columns year and population. Convert population and year into int.
+"""
+popn_path = r"C:\Users\Riya\Desktop\Harris Year 1\Spring Quarter\Data & Programming I Python\population.csv"
+popn = pd.read_csv(popn_path)
+
+## cleaning dataset 
+popn = popn.rename({"TIME" : "Country"}, axis = 1)
+print(popn.head())
+
+popn = popn.replace({'Country' : {"Czech Republic" : "Czech Republic"}}) ##fizing bug due to extra spaces 
+
+## merging with countries_df to create EU members dataset only 
+eu_popn = popn.merge(countries_df, 
+                      on = 'Country',
+                      how = 'inner')
+df_len2 = len(eu_popn)
+assert(ideal_len == df_len2), 'Merge error'
+
+## indicating missing values in eu_popn (converting from : to Nan)
+eu_popn.replace(':', float('Nan'), inplace = True)
+print(eu_popn == ':')
+
+##converting to long 
+eupopn_long = eu_popn.melt(
+    id_vars = ['Country'],
+    var_name = 'Year',
+    value_name = 'Population')
+
+eupopn_long['Population'] = eupopn_long['Population'].astype(int)
+eupopn_long['Year'] = eupopn_long['Year'].astype(int)
+
+
+
+"""
+QUESTION 5
+
+Short: Merge the two dataframe, find the total GDP
+
+Long: Merge the two dataframes. Total GDP is per capita GDP times the 
+population.
+"""
+## merging the two datasets
+final_df = gdp_long.merge(eupopn_long,
+                    on = ['Country','Year'],
+                    how = 'inner')
+
+## Calculating Total GDP & adding it as a column 
+final_df['Total GDP'] = final_df['GDP']*final_df['Population']
+
+
+"""
+QUESTION 6
+
+Short: For each country, find the annual GDP growth rate in percentage points.
+Round down to 2 digits.
+
+Long: Sort the data by name, and then year. You can now use a variety of methods
+to get the gdp growth rate, and we'll suggest one here: 
+
+1. Use groupby and shift(1) to create a column containing total GDP from the
+previous year. We haven't covered shift in class, so you'll need to look
+this method up. Using groupby has the benefit of automatically generating a
+missing value for 2012; if you don't do this, you'll need to ensure that you
+replace all 2012 values with missing values.
+
+2. Use the following arithematic operation to get the growth rate:
+    gdp_growth = (total_gdp - total_gdp_previous_year) * 100 / total_gdp
+"""
+## sorting values by country & year 
+final_df.sort_values(by = ['Country', 'Year'], ascending = True)
+
+## create new column that stores the previous year's gdp & use shift(1) to do this for all data points
+final_df['Previous_TotalGDP'] = final_df.groupby('Country')['Total GDP'].shift(1)
+
+## calculating gdp growth rate & rounding it off
+final_df['GDP Growth Rate (%)'] = ((final_df['Total GDP'] - final_df['Previous_TotalGDP'])/final_df['Previous_TotalGDP'])*100
+final_df['GDP Growth Rate (%)'] = final_df['GDP Growth Rate (%)'].round(2)
+
+"""
+QUESTION 7
+
+Short: Which country has the highest total gdp (for the any year) in the EU? 
+
+Long: Do not hardcode your answer! You will have to put the automate putting 
+the name of the country into a string called country_name and using the following
+format string to display it:
+
+print(f"The largest country in the EU is {country_name}")
+"""
+final_df.sort_values(by = 'Total GDP', ascending = False)
+country_name = final_df.iloc[301]   ##accoridng to descending order results, the index for the highest total gdp is 301 
+
+print(f"The largest country in the EU is {country_name}")
+
+""")
+QUESTION 8
+
+Create a dataframe that consists only of the country you found in Question 7
+
+In which year did this country have the most growth in the period 2012-23?
+
+In which year did this country have the least growth in the peroid 2012-23?
+
+Do not hardcode your answer. You will have to use the following format strings 
+to show your answer:
+
+print(f"Their best year was {best_year}")
+print(f"Their worst year was {worst_year}")
+"""
+## creating a separate dataframe for the country with the largest total gdp
+country_df = final_df[final_df['Country'] == 'Germany']
+
+## Highest growth 
+best_year = country_df.loc[country_df['GDP Growth Rate (%)'].idxmax(), 'Year']
+print(best_year) ##checking 
+
+## Lowest growth 
+worst_year = country_df.loc[country_df['GDP Growth Rate (%)'].idxmin(), 'Year']
+print(worst_year) ##checking 
+
+## Compiling results 
+print(f"Their best year was {best_year}")
+print(f"Their worst year was {worst_year}")
+
