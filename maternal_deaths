@@ -1,0 +1,120 @@
+## Data Cleaning and Visualisation: Maternal Death Data by relevant characteristics (Mexico) 
+
+
+path = r"C:/Users/Riya/Desktop/iNPER Mexico Internship/maternal death data/maternal deaths by age.csv"
+mm_ageset = pd.read_csv(path, encoding ="windows-1252")
+
+mm_ageset = mm_ageset.dropna(how = "all")        ## since raw dataset has data in every alternate row
+
+mm_ageset = mm_ageset.replace(" ", 0)
+
+## creating dataset containing % of total deaths for each age set 
+
+mm_ageset["Year"] = pd.to_datetime(mm_ageset["Year"])
+
+def percentage(x):
+    oftotal = (x/sum(x))*100 
+    return oftotal                  ##function that calculates the % of total deaths by each age set 
+
+mm_ageset.iloc[:, 2:] = mm_ageset.iloc[:, 2:].apply(percentage, axis = 1)             ## iloc:, 2: used so that function is not applying on year and age set categories 
+
+
+## Graphing raw number of maternal deaths by age set 
+
+yr = mm_ageset["Year"]
+fifteen_nineteen = mm_ageset["15-19 a–os"]
+twenty_twentyfour = mm_ageset[" 20-24 a–os"]
+forty_fortyfour = mm_ageset[" 40-44 a–os"]
+thirty_thirtyfour = mm_ageset[" 30-34 a–os"]
+thirtyfive_thirtynine = mm_ageset[" 35-39 a–os"]
+
+plt.style.use("dark_background")
+fig, ax = plt.subplots()
+ax.plot(yr, fifteen_nineteen, label = "15-19 years") 
+ax.plot(yr, twenty_twentyfour, label = "20-24 years")
+ax.plot(yr, thirty_thirtyfour, label = "30-34 years")
+ax.plot(yr, thirtyfive_thirtynine, label = "35-39 years")                                                                           
+#ax.plot(yr, forty_fortyfour, label = "40-44 years")
+ax.set_xlabel("Year")
+ax.set_ylabel("Maternal Deaths")
+ax.set_title("Maternal Deaths in Mexico by Age Set (1990-2022)")
+ax.legend(fontsize = "small", loc = "best")
+
+
+## Creating plots for % of total deaths by age-set 
+
+year = mm_ageset["Year"]
+age_1519 = mm_ageset["15-19 a–os"]
+age_2024 = mm_ageset[" 20-24 a–os"]
+age_4044 = mm_ageset[" 40-44 a–os"]
+age_3034 = mm_ageset[" 30-34 a–os"]
+age_3539 = mm_ageset[" 35-39 a–os"]
+
+plt.style.use("dark_background")
+fig, ax = plt.subplots()
+ax.plot(yr, age_1519, label = "15-19 years") 
+ax.plot(yr, age_2024, label = "20-24 years")
+ax.plot(yr, age_3034, label = "30-34 years")
+ax.plot(yr, age_3539, label = "35-39 years")                                                                           
+#ax.plot(yr, age_4044, label = "40-44 years")
+ax.set_xlabel("Year")
+ax.set_ylabel("Maternal Deaths")
+ax.set_title("% of Total Maternal Deaths in Mexico by Age Set (1990-2022)")
+ax.legend(fontsize = "small", loc = "best")
+
+
+## Maternal Deaths- Education levels data 
+
+path2 = r"C:/Users/Riya/Desktop/iNPER Mexico Internship/maternal death data/maternal death master.csv"
+
+mm_characteristics = pd.read_csv(path2, encoding = "windows-1252") 
+
+mm_characteristics = mm_characteristics.dropna(how = "all")        
+
+mm_characteristics = mm_characteristics.replace(" ", 0)
+
+##creating variables 
+
+years = mm_characteristics["Year"]
+mm_noeduc = mm_characteristics[" Total-no_school"]
+mm_primaryeduc = mm_characteristics[" Total-primary_only"]
+mm_secondaryeduc = mm_characteristics[" Total-secondary_only"]
+mm_unmarried = mm_characteristics[" Total-unmarried"]
+mm_dontwork = mm_characteristics[" Total-donÕt_work"]
+mm_total = mm_characteristics[" Total_deaths"]
+
+
+plt.style.use("Solarize_Light2")
+fig, ax = plt.subplots()
+ax.plot(years, mm_noeduc, label = "Females with no education") 
+ax.plot(years, mm_primaryeduc, label = "Females with primary education only")
+ax.plot(years, mm_secondaryeduc, label = "Females with secondary education only")
+#ax.plot(years, mm_total)
+ax.set_xlabel("Year")
+ax.set_ylabel("Number of Maternal Deaths")
+ax.set_title("Number of Maternal Deaths in Mexico by Education Level (1990-2022)")
+ax.legend(fontsize = "small", loc = "best")
+
+
+plt.style.use("Solarize_Light2")
+fig, ax = plt.subplots()
+ax.plot(years, mm_unmarried, label = "Unmarried Women") 
+ax.plot(years, mm_total, label = "Total Maternal Deaths")
+ax.set_xlabel("Year")
+ax.set_ylabel("Number of Maternal Deaths")
+ax.set_title("Number of Maternal Deaths in Mexico by Marriage Status (1990-2022)")
+ax.legend(fontsize = "small", loc = "best")
+
+
+plt.style.use("Solarize_Light2")
+fig, ax = plt.subplots()
+ax.plot(years, mm_dontwork, label = "Women who don't work") 
+ax.plot(years, mm_total, label = "Total Maternal Deaths")
+ax.set_xlabel("Year")
+ax.set_ylabel("Number of Maternal Deaths")
+ax.set_title("Number of Maternal Deaths in Mexico by Employment Status (1990-2022)")
+ax.legend(fontsize = "small", loc = "best")
+
+
+
+
